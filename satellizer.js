@@ -1,5 +1,5 @@
 /**
- * Satellizer 0.10.1
+ * Satellizer 0.11.1
  * (c) 2015 Sahat Yalkabov
  * License: MIT
  */
@@ -356,6 +356,7 @@
               if (exp) {
                 return Math.round(new Date().getTime() / 1000) <= exp;
               }
+              return true;
             }
             return true;
           }
@@ -385,10 +386,11 @@
       '$q',
       '$http',
       'satellizer.config',
+      'satellizer.utils',
       'satellizer.shared',
       'satellizer.Oauth1',
       'satellizer.Oauth2',
-      function($q, $http, config, shared, Oauth1, Oauth2) {
+      function($q, $http, config, utils, shared, Oauth1, Oauth2) {
         var oauth = {};
 
         oauth.authenticate = function(name, redirect, userData) {
@@ -408,10 +410,12 @@
         };
 
         oauth.unlink = function(provider) {
+          var unlinkUrl =  config.baseUrl ? utils.joinUrl(config.baseUrl, config.unlinkUrl) : config.unlinkUrl;
+
           if (config.unlinkMethod === 'get') {
-            return $http.get(config.unlinkUrl + provider);
+            return $http.get(unlinkUrl + provider);
           } else if (config.unlinkMethod === 'post') {
-            return $http.post(config.unlinkUrl, provider);
+            return $http.post(unlinkUrl, provider);
           }
         };
 
@@ -771,8 +775,12 @@
         return obj;
       };
 
-      this.joinUrl = function() {
-        var joined = Array.prototype.slice.call(arguments, 0).join('/');
+      this.joinUrl = function(baseUrl, url) {
+        if (/^(?:[a-z]+:)?\/\//i.test(url)) {
+          return url;
+        }
+
+        var joined = [baseUrl, url].join('/');
 
         var normalize = function(str) {
           return str
@@ -826,20 +834,24 @@
       '$q',
       'satellizer.config',
       'satellizer.storage',
-      function($q, config, storage) {
-        var tokenName = config.tokenPrefix ? config.tokenPrefix + '_' + config.tokenName : config.tokenName;
+      'satellizer.shared',
+      function($q, config, storage, shared) {
         return {
           request: function(request) {
             if (request.skipAuthorization) {
               return request;
             }
-            var token = storage.get(tokenName);
-            if (token && config.httpInterceptor) {
+             if (shared.isAuthenticated() && config.httpInterceptor) {
+              var tokenName = config.tokenPrefix ? config.tokenPrefix + '_' + config.tokenName : config.tokenName;
+              var token = storage.get(tokenName);
+
               if (config.authHeader && config.authToken) {
                 token = config.authToken + ' ' + token;
               }
+
               request.headers[config.authHeader] = token;
             }
+
             return request;
           },
           responseError: function(response) {
