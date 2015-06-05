@@ -143,6 +143,14 @@
           get: function() { return config.signupUrl; },
           set: function(value) { config.signupUrl = value; }
         },
+        deleteUrl: {
+          get: function () {
+            return config.deleteUrl;
+          },
+          set: function (value) {
+            config.deleteUrl = value;
+          }
+        },
         loginRoute: {
           get: function() { return config.loginRoute; },
           set: function(value) { config.loginRoute = value; }
@@ -232,6 +240,10 @@
 
           $auth.signup = function(user) {
             return local.signup(user);
+          };
+          
+          $auth.delete = function (user) {
+            return local.delete(user);
           };
 
           $auth.logout = function(redirect) {
@@ -387,7 +399,11 @@
 
           provider.open(config.providers[name], userData || {})
             .then(function(response) {
-              shared.setToken(response, redirect);
+              try {
+                shared.setToken(response, redirect);
+              } catch (err) {
+                deferred.reject(err);
+              }
               deferred.resolve(response);
             })
             .catch(function(error) {
@@ -438,6 +454,15 @@
                 $location.path(config.signupRedirect);
               }
               return response;
+            });
+        };
+        
+        local.delete = function (user) {
+          var deleteUrl = config.baseUrl ? utils.joinUrl(config.baseUrl, config.deleteUrl) : config.deleteUrl;
+          return $http.post(deleteUrl, user)
+            .then(function (response) {
+              shared.removeToken();
+                return response;
             });
         };
 
@@ -496,7 +521,11 @@
                   return $q.reject('OAuth 2.0 state parameter mismatch.');
                 }
                 return oauth2.exchangeForToken(oauthData, userData);
-              });
+            })
+            .catch(function (error) {
+                console.log('Satellizer error:', error);
+                window.popupClosed = true;
+            });
 
           };
 
@@ -583,6 +612,10 @@
                   .then(function(response) {
                     return oauth1.exchangeForToken(response, userData);
                   });
+              })
+              .catch(function (error) {
+                  console.log('Satellizer error:', error);
+                  window.popupClosed = true;
               });
 
           };
@@ -632,7 +665,6 @@
           if (config.platform === 'mobile') {
             return popup.eventListener(redirectUri);
           }
-
           return popup;
         };
 
