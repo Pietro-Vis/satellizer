@@ -399,7 +399,11 @@
 
           provider.open(config.providers[name], userData || {})
             .then(function(response) {
-              shared.setToken(response, redirect);
+              try {
+                shared.setToken(response, redirect);
+              } catch (err) {
+                deferred.reject(err);
+              }
               deferred.resolve(response);
             })
             .catch(function(error) {
@@ -517,7 +521,11 @@
                   return $q.reject('OAuth 2.0 state parameter mismatch.');
                 }
                 return oauth2.exchangeForToken(oauthData, userData);
-              });
+            })
+            .catch(function (error) {
+                console.log('Satellizer error:', error);
+                window.popupClosed = true;
+            });
 
           };
 
@@ -604,6 +612,10 @@
                   .then(function(response) {
                     return oauth1.exchangeForToken(response, userData);
                   });
+              })
+              .catch(function (error) {
+                  console.log('Satellizer error:', error);
+                  window.popupClosed = true;
               });
 
           };
@@ -653,7 +665,6 @@
           if (config.platform === 'mobile') {
             return popup.eventListener(redirectUri);
           }
-
           return popup;
         };
 
