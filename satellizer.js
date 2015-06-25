@@ -455,7 +455,7 @@
                 try {
                   shared.setToken(response);
                 } catch (err) {
-                  
+
                 }
               } else if (config.signupRedirect) {
                 $location.path(config.signupRedirect);
@@ -737,6 +737,7 @@
                 }
 
                 popup.popupWindow.close();
+                window.popupClosed = true;
                 $interval.cancel(polling);
               }
             } catch (error) {
@@ -744,9 +745,11 @@
 
             if (!popup.popupWindow) {
               $interval.cancel(polling);
+              window.popupClosed = true;
               deferred.reject({ data: 'Provider Popup Blocked' });
             } else if (popup.popupWindow.closed || popup.popupWindow.closed === undefined) {
               $interval.cancel(polling);
+              window.popupClosed = true;
               deferred.reject({ data: 'Authorization Failed' });
             }
           }, 35);
