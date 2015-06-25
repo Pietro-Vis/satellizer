@@ -1,5 +1,5 @@
 /**
- * Satellizer 0.11.1
+ * Satellizer 0.11.2
  * (c) 2015 Sahat Yalkabov
  * License: MIT
  */
@@ -47,10 +47,10 @@
           name: 'facebook',
           url: '/auth/facebook',
           authorizationEndpoint: 'https://www.facebook.com/v2.3/dialog/oauth',
-          redirectUri: window.location.origin + '/' || window.location.protocol + '//' + window.location.host + '/',
+          redirectUri: (window.location.origin || window.location.protocol + '//' + window.location.host) + '/',
           scope: ['email'],
           scopeDelimiter: ',',
-          requiredUrlParams: ['display', 'scope'],
+          requiredUrlParams: ['nonce','display', 'scope'],
           display: 'popup',
           type: '2.0',
           popupOptions: { width: 580, height: 400 }
@@ -518,22 +518,26 @@
 
             var url = defaults.authorizationEndpoint + '?' + oauth2.buildQueryString();
 
-            return popup.open(url, defaults.name, defaults.popupOptions, defaults.redirectUri)
-              .pollPopup()
-              .then(function(oauthData) {
-                if (defaults.responseType === 'token') {
-                  return oauthData;
-                }
-                if (oauthData.state && oauthData.state !== storage.get(stateName)) {
-                  return $q.reject('OAuth 2.0 state parameter mismatch.');
-                }
-                return oauth2.exchangeForToken(oauthData, userData);
+            var openPopup;
+            if (config.platform === 'mobile') {
+              openPopup = popup.open(url, defaults.name, defaults.popupOptions, defaults.redirectUri)
+            } else {
+              openPopup = popup.open(url, defaults.name, defaults.popupOptions, defaults.redirectUri).pollPopup();
+            }
+
+            return openPopup.then(function(oauthData) {
+              if (defaults.responseType === 'token') {
+                return oauthData;
+              }
+              if (oauthData.state && oauthData.state !== storage.get(stateName)) {
+                return $q.reject('OAuth 2.0 state parameter mismatch.');
+              }
+              return oauth2.exchangeForToken(oauthData, userData);
             })
             .catch(function (error) {
                 console.log('Satellizer error:', error);
                 window.popupClosed = true;
             });
-
           };
 
           oauth2.exchangeForToken = function(oauthData, userData) {
@@ -560,9 +564,10 @@
             var urlParams = ['defaultUrlParams', 'requiredUrlParams', 'optionalUrlParams'];
 
             angular.forEach(urlParams, function(params) {
+
               angular.forEach(defaults[params], function(paramName) {
                 var camelizedName = utils.camelCase(paramName);
-                var paramValue = defaults[camelizedName];
+                var paramValue = angular.isFunction(defaults[paramName]) ? defaults[paramName]() : defaults[camelizedName];
 
                 if (paramName === 'state') {
                   var stateName = defaults.name + '_state';
@@ -669,6 +674,7 @@
             popup.popupWindow.focus();
           }
 
+
           if (config.platform === 'mobile') {
             return popup.eventListener(redirectUri);
           }
@@ -740,8 +746,7 @@
                 window.popupClosed = true;
                 $interval.cancel(polling);
               }
-            } catch (error) {
-            }
+            } catch (error) {}
 
             if (!popup.popupWindow) {
               $interval.cancel(polling);
@@ -753,6 +758,7 @@
               deferred.reject({ data: 'Authorization Failed' });
             }
           }, 35);
+
           return deferred.promise;
         };
 
