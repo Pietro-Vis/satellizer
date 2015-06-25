@@ -520,7 +520,7 @@
 
             var openPopup;
             if (config.platform === 'mobile') {
-              openPopup = popup.open(url, defaults.name, defaults.popupOptions, defaults.redirectUri)
+              openPopup = popup.open(url, defaults.name, defaults.popupOptions, defaults.redirectUri);
             } else {
               openPopup = popup.open(url, defaults.name, defaults.popupOptions, defaults.redirectUri).pollPopup();
             }
