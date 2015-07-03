@@ -668,7 +668,7 @@
 
           var stringifiedOptions = popup.stringifyOptions(popup.prepareOptions(options || {}));
 
-          popup.popupWindow = window.open(url, windowName, stringifiedOptions);
+          popup.popupWindow = window.open(url, '_blank', stringifiedOptions);
 
           if (popup.popupWindow && popup.popupWindow.focus) {
             popup.popupWindow.focus();
