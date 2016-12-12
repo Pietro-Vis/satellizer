@@ -553,7 +553,7 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
                 }
 
                 return Oauth2.exchangeForToken(oauthData, userData);
-            });              
+            });
           };
 
           Oauth2.exchangeForToken = function(oauthData, userData) {
@@ -668,15 +668,10 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
                 }
 
                 return popupListener
-                  .then(function(response) {
-                    return Oauth1.exchangeForToken(response, userData);
-                  });
               })
-              .catch(function (error) {
-                  console.log('Satellizer error:', error);
-                  window.popupClosed = true;
+              .then(function(response) {
+                return Oauth1.exchangeForToken(response, userData);
               });
-
           };
 
           Oauth1.exchangeForToken = function(oauthData, userData) {
@@ -787,16 +782,13 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
                 $interval.cancel(polling);
 
                 Popup.popupWindow.close();
-                window.popupClosed = true;
               }
             } catch (error) {
               // Ignore DOMException: Blocked a frame with origin from accessing a cross-origin frame.
-              window.popupClosed = true;
             }
 
             if (!Popup.popupWindow || Popup.popupWindow.closed || Popup.popupWindow.closed === undefined) {
-              $interval.cancel(polling);
-              window.popupClosed = true;
+              $interval.cancel(polling);              
             }
           }, 50);
 
