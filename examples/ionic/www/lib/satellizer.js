@@ -434,7 +434,7 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
               // This is for a scenario when someone wishes to opt out from
               // Satellizer's magic by doing authorization code exchange and
               // saving a token manually.
-              if (config.providers[name].url) {
+              if (config.providers[name].flowType !== 'swite' && config.providers[name].url) {
                 shared.setToken(response, false);
               }
               return response;
@@ -544,6 +544,30 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
                 // This is for a scenario when someone wishes to opt out from
                 // Satellizer's magic by doing authorization code exchange and
                 // saving a token manually.
+                if (defaults.flowType === 'swite') {
+                    var data = angular.extend({}, userData);
+                    angular.forEach(defaults.responseParams, function(value, key) {
+                      switch (key) {
+                        case 'code':
+                          data[value] = oauthData.code;
+                          break;
+                        case 'clientId':
+                          data[value] = defaults.clientId;
+                          break;
+                        case 'redirectUri':
+                          data[value] = defaults.redirectUri;
+                          break;
+                        default:
+                          data[value] = oauthData[key]
+                      }
+                    });
+
+                    if (oauthData.state) {
+                      data.state = oauthData.state;
+                    }
+                    return data;
+                }
+
                 if (defaults.responseType === 'token' || !defaults.url) {
                   return oauthData;
                 }
@@ -670,6 +694,10 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
                 return popupListener
               })
               .then(function(response) {
+                if (defaults.flowType === 'swite') {
+                    return response;
+                }
+
                 return Oauth1.exchangeForToken(response, userData);
               });
           };
@@ -788,7 +816,7 @@ if (typeof module !== 'undefined' && typeof exports !== 'undefined' && module.ex
             }
 
             if (!Popup.popupWindow || Popup.popupWindow.closed || Popup.popupWindow.closed === undefined) {
-              $interval.cancel(polling);              
+              $interval.cancel(polling);
             }
           }, 50);
 
